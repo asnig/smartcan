@@ -1,4 +1,4 @@
-<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%
     application.setAttribute("APP_PATH", request.getContextPath());
 %>
@@ -24,84 +24,111 @@
 </div>
 </body>
 <script>
-    var myChart = echarts.init(document.getElementById('main'));
+    const myChart = echarts.init(document.getElementById('main'));
 
     $(function () {
         init();
     });
 
-    setInterval('loadChart()', 500);
-    setInterval('test()', 500);
+    // setInterval('loadChart()', 500);
+    // setInterval('test()', 500);
 
     // 初始化图表
     function init() {
-        myChart.setOption({
-            title: {
-                text: '实时监控'
-            },
-            xAxis: {
-                name: '时间',
-                type: 'time',
-                splitLine: {
-                    show: false
-                }
-            },
-            yAxis: {
-                name: '垃圾桶占用量',
-                type: 'value',
-                min: 0,
-                max: 100,
-                splitLine: {
-                    show: false
-                }
-            },
-            series: [{
-                name: '模拟数据',
-                type: 'line',
-                showSymbol: false,
-                hoverAnimation: false,
-                data: []
-            }]
-        });
+        myChart.setOption(option);
     }
 
-    function loadChart() {
-        $.ajax({
-            url: "${APP_PATH}/AnalyseServlet?method=getData",
-            type: "POST",
-            cache: false,
-            processData: false,  // 不处理数据
-            contentType: false,   // 不设置内容类型
-            success: function (result) {
-                var data = [];
-                $.each(JSON.parse(result), function (i, ele) {
-                    data.push({
-                        value: [ele.time, ele.state]
-                    });
-                });
-                myChart.setOption({
-                    series: [
-                        {
-                            type: 'line',
-                            data: data
-                        }
-                    ]
-                });
+    option = {
+        tooltip: {
+            formatter: "{b} : {c}%"
+        },
+        toolbox: {
+            feature: {
+                restore: {},
+                saveAsImage: {}
             }
-        });
+        },
+        series: [
+            {
+                name: '',
+                type: 'gauge',
+                detail: {formatter: '{value}%'},
+                data: [{value: 0, name: '1号垃圾桶'}]
+            }
+        ]
+    };
+
+    let websocket = null;
+    //判断当前浏览器是否支持WebSocket
+    if ('WebSocket' in window) {
+        websocket = new WebSocket("ws://localhost:8080/ws/websocketServer/1");
+
+        //连接成功建立的回调方法
+        websocket.onopen = function () {
+        };
+
+        //接收到消息的回调方法
+        websocket.onmessage = function (event) {
+            console.log("接受到消息:" + event.data);
+            option.series[0].data[0].value = event.data;
+            myChart.setOption(option)
+        };
+
+        //连接发生错误的回调方法
+        websocket.onerror = function () {
+            alert("WebSocket连接发生错误");
+        };
+
+        //连接关闭的回调方法
+        websocket.onclose = function () {
+            alert("WebSocket连接关闭");
+        };
+
+        //监听窗口关闭事件，当窗口关闭时，主动去关闭websocket连接，防止连接还没断开就关闭窗口，server端会抛异常。
+        window.onbeforeunload = function () {
+            closeWebSocket();
+        }
+
+    } else {
+        alert('当前浏览器 Not support websocket')
     }
 
-    function test() {
-        $.ajax({
-            url: "${APP_PATH}/AnalyseServlet?method=storeState&state=" + Math.random() * 101,
-            type: "POST",
-            cache: false,
-            processData: false, // 不处理数据
-            contentType: false, // 不设置内容类型
-            success: function (result) {
-                console.log("success");
-            }
-        });
+    /*let websocket2 = null;
+    //判断当前浏览器是否支持WebSocket
+    if ('WebSocket' in window) {
+        websocket = new WebSocket("ws://localhost:8080/ws/websocketServer/2");
+
+        //连接成功建立的回调方法
+        websocket.onopen = function () {
+        };
+
+        //接收到消息的回调方法
+        websocket.onmessage = function (event) {
+            console.log("接受到消息2:" + event.data);
+        };
+
+        //连接发生错误的回调方法
+        websocket.onerror = function () {
+            alert("WebSocket连接发生错误");
+        };
+
+        //连接关闭的回调方法
+        websocket.onclose = function () {
+            alert("WebSocket连接关闭");
+        };
+
+        //监听窗口关闭事件，当窗口关闭时，主动去关闭websocket连接，防止连接还没断开就关闭窗口，server端会抛异常。
+        window.onbeforeunload = function () {
+            closeWebSocket();
+        }
+
+    } else {
+        alert('当前浏览器 Not support websocket')
+    }*/
+
+    //关闭WebSocket连接
+    function closeWebSocket() {
+        websocket.close();
     }
 </script>
 
