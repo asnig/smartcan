@@ -4,15 +4,20 @@ import javax.websocket.*;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.*;
 
 /**
  * WebSocket服务器
+ *
  * @author XYQ
  */
 @ServerEndpoint("/ws/websocketServer/{canId}")
 public class WebSocketServer {
+
+    public static Map<String, Set<Session>> sessionMap = new ConcurrentHashMap<>();
 
     /**
      * 存储各个垃圾桶数据的map
@@ -31,9 +36,20 @@ public class WebSocketServer {
      */
     private ScheduledFuture<?> future;
 
+    private String canId;
+
     @OnOpen
     public void onOpen(Session session, @PathParam("canId") String canId) {
+        this.canId = canId;
         this.session = session;
+        Set<Session> tempSession = sessionMap.get(canId);
+        if (tempSession == null) {
+            Set<Session> temp = new HashSet<>();
+            sessionMap.put(canId, temp);
+        }
+        assert tempSession != null;
+        tempSession.add(session);
+        sessionMap.put(canId, tempSession);
         // 开启任务，每隔1s向客户端发送信息
         this.future = service.scheduleAtFixedRate(() -> {
             String state = datas.get(canId);

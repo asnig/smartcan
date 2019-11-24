@@ -7,6 +7,9 @@ import com.ckguys.websocket.WebSocketServer;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.websocket.Session;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * 分析数据用的Servlet
@@ -15,6 +18,7 @@ import javax.servlet.http.HttpServletResponse;
  */
 @WebServlet(name = "AnalyseServlet", urlPatterns = "/AnalyseServlet")
 public class AnalyseServlet extends BaseServlet {
+
 
     /**
      * 保存垃圾桶传递过来的数据
@@ -31,5 +35,11 @@ public class AnalyseServlet extends BaseServlet {
         // 封装成Data对象 暂时没用
         Data temp = new Data(canId, state, time);
         WebSocketServer.datas.put(canId, state);
+        WebSocketServer.sessionMap.get(canId);
+
+    }
+
+    public void broadCast(Map<String, Set<Session>> map) {
+
     }
 }
